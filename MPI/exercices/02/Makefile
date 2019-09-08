@@ -9,5 +9,5 @@ $(TARGET): prog.c
 run: $(TARGET)
 	mpirun -n 5 $< $(FILENAME)
 
-clean: $(TARGET) $(FILENAME)
+clean: $(TARGET) $(wildcard $(FILENAME))
 	rm $^
