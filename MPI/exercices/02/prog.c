@@ -33,7 +33,7 @@ int main(int argc, char **argv)
         }
 
         for (int i = 0; i < 100 * (numtasks - 1); ++i) {
-            MPI_Recv(&input, 1, MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+            MPI_Recv(&input, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             fprintf(fp, "%d\n", status.MPI_SOURCE);
         }
 
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     }
     else {
         for (int i = 0; i < 100; ++i) {
-            MPI_Send(&output, 1, MPI_BYTE, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&output, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
         }
     }
 
