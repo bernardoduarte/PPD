@@ -101,7 +101,9 @@ unsigned int taskGetNumRows(unsigned int taskNum, unsigned int numtasks, unsigne
 unsigned int taskGetInitialRow(unsigned int taskNum, unsigned int numtasks, unsigned int rows)
 {
     unsigned int initialRow = taskNum * (rows / numtasks);
-    initialRow += (rows % numtasks > taskNum) ? rows % numtasks : taskNum;
+    if (rows % numtasks) {
+        initialRow += (rows % numtasks > taskNum) ? rows % numtasks : taskNum;
+    }
     return initialRow;
 }
 
@@ -143,6 +145,7 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    // Initialize
     if (rank == 0) {
 
         if (argc < 4) {
@@ -174,6 +177,7 @@ int main(int argc, char **argv)
         for (i = 1; i < numtasks; ++i) {
             unsigned int initialRow = taskGetInitialRow(i, numtasks, rows);
             unsigned int numRows = taskGetNumRows(i, numtasks, rows);
+            // printf("[%d]: Transfering %d work rows starting at %d row with paddings to %d\n", rank, numRows, initialRow, i);
 
             for (j = 0; j < numRows; ++j) {
                 MPI_Send(board[initialRow + j], columns, MPI_UNSIGNED_CHAR, i, tag, MPI_COMM_WORLD);
@@ -185,17 +189,17 @@ int main(int argc, char **argv)
                 MPI_Send(board[initialRow + numRows], columns, MPI_UNSIGNED_CHAR, i, tag, MPI_COMM_WORLD);
             }
         }
-        printf("OIE 1\n");
     }
     else {
         MPI_Recv(&rows, 1, MPI_UNSIGNED, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Recv(&columns, 1, MPI_UNSIGNED, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Recv(&iterations, 1, MPI_UNSIGNED, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("[%d]\n", rank);
 
         // unsigned int initialRow = taskGetInitialRow(rank, numtasks, rows);
         unsigned int numRows = taskGetNumRows(rank, numtasks, rows);
         unsigned int padding = (rank < numtasks - 1) ? 2 : 1;
-        printf("[%d]: NumRows: %d, Padding: %d\n", rank, numRows, padding);
+        // printf("[%d]: NumRows: %d, Padding: %d\n", rank, numRows, padding);
 
         if (boardInit(&board, numRows + padding, columns) != 0) {
             printf("Error initializing task %u board\n", rank);
@@ -214,14 +218,15 @@ int main(int argc, char **argv)
         MPI_Recv(board[0], columns, MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         // Lower padding
         if (rank < numtasks - 1) {
-            MPI_Recv(board[numRows + 1], columns, MPI_UNSIGNED_CHAR, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(board[numRows + 1], columns, MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
     }
 
+    // Iterate
     if (rank == 0) {
         unsigned int numRows = taskGetNumRows(rank, numtasks, rows);
         unsigned int padding = (numtasks > 1) ? 1 : 0;
-        printf("NumRows: %d, Padding: %d\n", numRows, padding);
+        // printf("[%d]: NumRows: %d, Padding: %d\n", rank, numRows, padding);
         for (h = 0; h < iterations; ++h) {
             for (i = 0; i < numRows; ++i) {
                 for (j = 0; j < columns; ++j) {
@@ -244,7 +249,6 @@ int main(int argc, char **argv)
                     }
                 }
             }
-            boardPrint(auxBoard, numRows, columns);
 
             if (numtasks > 1) {
                 MPI_Send(auxBoard[numRows - 1], columns, MPI_UNSIGNED_CHAR, rank + 1, tag, MPI_COMM_WORLD);
@@ -256,17 +260,19 @@ int main(int argc, char **argv)
                     board[i][j] = auxBoard[i][j];
                 }
             }
+            // printf("[%d]\n", rank);
+            // boardPrint(board, numRows, columns);
         }
     }
     else{
         unsigned int numRows = taskGetNumRows(rank, numtasks, rows);
         unsigned int padding = (rank < numtasks - 1) ? 2 : 1;
-        printf("NumRows: %d, Padding: %d\n", numRows, padding);
+        // printf("[%d]: NumRows: %d, Padding: %d\n", rank, numRows, padding);
         for (h = 0; h < iterations; ++h) {
-            for (i = 1; i < numRows + 1; ++i) {
+            for (i = 1; i < numRows + padding; ++i) {
                 for (j = 0; j < columns; ++j) {
                     unsigned int neighbors = countNeighbors(board, numRows + padding, columns, i, j);
-                    if (board[i][j] == ' ') {
+                    if (board[i][j] == 0) {
                         if (neighbors == 3) {
                             auxBoard[i][j] = 1;
                         }
@@ -284,7 +290,6 @@ int main(int argc, char **argv)
                     }
                 }
             }
-            boardPrint(auxBoard, numRows + padding, columns);
 
             MPI_Recv(auxBoard[0], columns, MPI_UNSIGNED_CHAR, rank - 1, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Send(auxBoard[1], columns, MPI_UNSIGNED_CHAR, rank - 1, tag, MPI_COMM_WORLD);
@@ -298,9 +303,30 @@ int main(int argc, char **argv)
                     board[i][j] = auxBoard[i][j];
                 }
             }
+            // printf("[%d]\n", rank);
+            // boardPrint(board, numRows, columns);
         }
     }
 
+    // Agregate
+    if (rank == 0) {
+        for (i = 1; i < numtasks; ++i) {
+            unsigned int initialRow = taskGetInitialRow(i, numtasks, rows);
+            unsigned int numRows = taskGetNumRows(i, numtasks, rows);
+            // printf("[%d]: Receiving %d work rows starting at %d row and task %d\n", rank, numRows, initialRow, i);
+            for (j = 0; j < numRows; ++j) {
+                MPI_Recv(board[initialRow + j], columns, MPI_UNSIGNED_CHAR, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }
+        }
+    }
+    else {
+        unsigned int numRows = taskGetNumRows(rank, numtasks, rows);
+        for (i = 1; i < numRows + 1; ++i) {
+            MPI_Send(board[i], columns, MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD);
+        }
+    }
+
+    // Finalize
     if (rank == 0) {
         if (boardToFile(board, rows, columns, outputFile) != 0) {
             printf("Error writing output file: %s\n", outputFile);
