@@ -133,7 +133,7 @@ int main(int argc, char const *argv[])
                 #pragma omp for private(h,i,j)
                 for (i = 0; i < size; ++i) {
                         for (j = 0; j < size; ++j) {
-                              board[i][j] = auxBoard[i][j];
+                                board[i][j] = auxBoard[i][j];
                         }
                 }
         }

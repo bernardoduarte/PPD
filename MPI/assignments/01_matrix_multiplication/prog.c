@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <mpi.h>
 #include "Matrix.h"
 
@@ -16,6 +17,7 @@ int main(int argc, char **argv)
     double *results;
     double buffer;
     MPI_Status status;
+    const int DEBUG = !strcmp(getenv("DEBUG"), "TRUE");
 
     MPI_Init(&argc, &argv);
 
@@ -49,43 +51,43 @@ int main(int argc, char **argv)
         }
 
         for (i = 1; i < numtasks; ++i) {
-            printf("Sending to %d\n", i);
+            if (DEBUG) printf("Sending to %d\n", i);
             MPI_Send(&rowsA, 1, MPI_UNSIGNED, i, tag, MPI_COMM_WORLD);
-            printf("Sent A rows\n");
+            if (DEBUG) printf("Sent A rows\n");
             MPI_Send(&columnsA, 1, MPI_UNSIGNED, i, tag, MPI_COMM_WORLD);
-            printf("Sent A columns\n");
+            if (DEBUG) printf("Sent A columns\n");
             MPI_Send(matrixA, rowsA * columnsA, MPI_DOUBLE, i, tag, MPI_COMM_WORLD);
-            printf("Sent matrix A\n");
+            if (DEBUG) printf("Sent matrix A\n");
             MPI_Send(&rowsB, 1, MPI_UNSIGNED, i, tag, MPI_COMM_WORLD);
-            printf("Sent B rows\n");
+            if (DEBUG) printf("Sent B rows\n");
             MPI_Send(&columnsB, 1, MPI_UNSIGNED, i, tag, MPI_COMM_WORLD);
-            printf("Sent B columns\n");
+            if (DEBUG) printf("Sent B columns\n");
             MPI_Send(matrixB, rowsB * columnsB, MPI_DOUBLE, i, tag, MPI_COMM_WORLD);
-            printf("Sent matrix B\n");
+            if (DEBUG) printf("Sent matrix B\n");
         }
     }
     else {
         MPI_Recv(&rowsA, 1, MPI_UNSIGNED, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("%d Received A rows\n", rank);
+        if (DEBUG) printf("%d Received A rows\n", rank);
         MPI_Recv(&columnsA, 1, MPI_UNSIGNED, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("%d Received A columns\n", rank);
+        if (DEBUG) printf("%d Received A columns\n", rank);
         if (Matrix_initialize(&matrixA, rowsA, columnsA) != 0) {
             printf("Error initializing matrix A.\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         MPI_Recv(matrixA, rowsA * columnsA, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("%d Received matrix A\n", rank);
+        if (DEBUG) printf("%d Received matrix A\n", rank);
 
         MPI_Recv(&rowsB, 1, MPI_UNSIGNED, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("%d Received B rows\n", rank);
+        if (DEBUG) printf("%d Received B rows\n", rank);
         MPI_Recv(&columnsB, 1, MPI_UNSIGNED, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("%d Received B columns\n", rank);
+        if (DEBUG) printf("%d Received B columns\n", rank);
         if (Matrix_initialize(&matrixB, rowsB, columnsB) != 0) {
             printf("Error initializing matrix B.\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         MPI_Recv(matrixB, rowsB * columnsB, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("%d Received matrix B\n", rank);
+        if (DEBUG) printf("%d Received matrix B\n", rank);
     }
 
     rowsC = rowsA;
@@ -123,7 +125,6 @@ int main(int argc, char **argv)
             MPI_Recv(&buffer, 1, MPI_DOUBLE, source, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             Matrix_set(&matrixC, rowsC, columnsC, row, column, buffer);
         }
-        Matrix_print(matrixC, rowsC, columnsC);
 
         for (i = rank; i < rowsC * columnsC; i += numtasks) {
             unsigned int row, column;
@@ -133,7 +134,6 @@ int main(int argc, char **argv)
         }
 
         Matrix_to_file(matrixC, rowsC, columnsC, filenameC);
-        Matrix_print(matrixC, rowsC, columnsC);
 
         Matrix_finalize(&matrixC);
     }
