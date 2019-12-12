@@ -81,7 +81,7 @@ int main(int argc, char const *argv[])
 
         srand(time(NULL));
 
-        if (argc < 6) {
+        if (argc < 8) {
                 printf("Error missing command line argument.\n");
                 return 1;
         }
@@ -120,9 +120,9 @@ int main(int argc, char const *argv[])
         tempo = fim - inicio;
         printf("Tempo: %.8lf\n", tempo);
 
-        printMatrix(matrixA, rowsA, columnsA, stdout);
-        printMatrix(matrixB, rowsB, columnsB, stdout);
-        printMatrix(matrixC, rowsC, columnsC, stdout);
+        // printMatrix(matrixA, rowsA, columnsA, stdout);
+        // printMatrix(matrixB, rowsB, columnsB, stdout);
+        // printMatrix(matrixC, rowsC, columnsC, stdout);
 
         deleteMatrix(matrixA, rowsA, columnsA);
         deleteMatrix(matrixB, rowsB, columnsB);

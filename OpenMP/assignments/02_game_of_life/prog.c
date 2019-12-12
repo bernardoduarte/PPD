@@ -101,7 +101,7 @@ int main(int argc, char const *argv[])
         board = randomBoard(size, size);
         auxBoard = cleanBoard(size, size);
         
-        printBoard(board, size, size, stdout);
+        // printBoard(board, size, size, stdout);
         
         GET_TIME(inicio);
 
@@ -142,7 +142,7 @@ int main(int argc, char const *argv[])
         tempo = fim - inicio;
         printf("Tempo: %.8lf\n", tempo);
 
-        printBoard(board, size, size, stdout);
+        // printBoard(board, size, size, stdout);
 
         deleteBoard(board, size, size);
         deleteBoard(auxBoard, size, size);

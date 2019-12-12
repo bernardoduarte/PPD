@@ -124,15 +124,15 @@ int main(int argc, char const *argv[])
         GET_TIME(fimTotal);
         tempoTotal = fimTotal - inicioTotal;
 
-        for (i = 0; i < 4; ++i) {
-                printf("Tempo tarefa %d: %.8lf\n", i, tempo[i]);
-        }
+        // for (i = 0; i < 4; ++i) {
+        //         printf("Tempo tarefa %d: %.8lf\n", i, tempo[i]);
+        // }
         printf("Tempo Total: %.8lf\n", tempoTotal);
 
-        printf("Mean: %02.2lf\n", mean);
-        printf("Min: %d\n", minimumValue);
-        printf("Max: %d\n", maximumValue);
-        printf("Modulo Product: %d\n", moduloProduct);
+        // printf("Mean: %02.2lf\n", mean);
+        // printf("Min: %d\n", minimumValue);
+        // printf("Max: %d\n", maximumValue);
+        // printf("Modulo Product: %d\n", moduloProduct);
 
         free(values);
 
